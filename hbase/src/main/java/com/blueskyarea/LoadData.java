@@ -15,6 +15,7 @@ import org.apache.spark.api.java.function.PairFunction;
 
 import scala.Tuple2;
 
+// How to load data from hbase using spark.
 public class LoadData {
 	public static void main(String[] args) {
 		// configure HBase
