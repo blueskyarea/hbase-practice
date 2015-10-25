@@ -25,7 +25,7 @@ public class SaveData {
 	public static void main(String[] args) {
 		// configure HBase
 		Configuration conf = HBaseConfiguration.create();
-		conf.set(TableInputFormat.INPUT_TABLE, "ns:test");
+		conf.set(TableOutputFormat.OUTPUT_TABLE, "ns:test");
 
 		// Initializing the spark context
 		SparkConf sparkConf = new SparkConf().setAppName("SaveData").setMaster("local");
@@ -39,17 +39,15 @@ public class SaveData {
 		
 		// new Hadoop API configuration
 		try {			
-			Job newAPIJobConfiguration1 = Job.getInstance(conf);
-			newAPIJobConfiguration1.getConfiguration().set(TableOutputFormat.OUTPUT_TABLE, "ns:test");
-			newAPIJobConfiguration1.setOutputFormatClass(org.apache.hadoop.hbase.mapreduce.TableOutputFormat.class);
-			saveToHBase(dataRdd, newAPIJobConfiguration1.getConfiguration());
+			Job job = Job.getInstance(conf);
+			job.setOutputFormatClass(org.apache.hadoop.hbase.mapreduce.TableOutputFormat.class);
+			saveToHBase(dataRdd, job.getConfiguration());
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 	
-	public static void saveToHBase(JavaRDD<String> dataRdd, Configuration conf2) {
+	private static void saveToHBase(JavaRDD<String> dataRdd, Configuration conf2) {
 		// create Key, Value pair to store in HBase
 		JavaPairRDD<ImmutableBytesWritable, Put> hbasePuts = dataRdd.mapToPair(new PairFunction<String, ImmutableBytesWritable, Put>() {
 					public Tuple2<ImmutableBytesWritable, Put> call(String row) throws Exception {
