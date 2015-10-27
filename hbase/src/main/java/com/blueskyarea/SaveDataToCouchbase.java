@@ -6,8 +6,9 @@ import java.util.List;
 
 import com.couchbase.client.CouchbaseClient;
 
-public class SaveDataToCouchbase {
+public class SaveDataToCouchbase {	
 	public static void main(String[] args) {
+		CouchbaseClient client = null;
 
 		try {
 			List<java.net.URI> host = new ArrayList<java.net.URI>();
@@ -15,14 +16,15 @@ public class SaveDataToCouchbase {
 			String bucket = "default";
 			String password = "";
 
-			CouchbaseClient client = new CouchbaseClient(host, bucket, password);
+			client = new CouchbaseClient(host, bucket, password);
 			client.set(args[0], args[1]).get();
-			
 			System.out.println(client.get(args[0]));
-			client.shutdown();
 		} catch (Exception e) {
 			e.printStackTrace();
-		} 
-
+		} finally {
+			if (client != null) {
+				client.shutdown();
+			}
+		}
 	}
 }
