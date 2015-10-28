@@ -20,7 +20,13 @@ import org.apache.hadoop.hbase.util.Base64;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.Function2;
+import org.apache.spark.api.java.function.PairFunction;
+
+import scala.Tuple2;
 
 public class Increment {
 
@@ -114,5 +120,45 @@ public class Increment {
 		return Base64.encodeBytes(proto.toByteArray());
 	}
 
+	protected JavaPairRDD<String, B> groupByKey2(JavaSparkContext jsc, List<A> list) {
+        JavaRDD<A> dataSet = jsc.parallelize(list);
+        JavaRDD<B> dataSet2 = convertEntity(dataSet);
+        
+        // TODO: Join with original data.
+        
+        JavaPairRDD<String, B> pairRdd2 = dataSet2.mapToPair(new PairFunction<B, String, B>() {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public Tuple2<String, B> call(B data) throws Exception {
+				// TODO Auto-generated method stub
+				return new Tuple2(data.getPid(), data);
+			}
+        	
+        }).reduceByKey(new Function2<B, B, B>() {
+
+			@Override
+			public B call(B v1, B v2) throws Exception {
+				// TODO Auto-generated method stub
+				return new B(
+						v1.getPid());
+			}
+        });
+
+    	return pairRdd2;
+    }
+    
+    private JavaRDD<B> convertEntity(JavaRDD<A> dataSet) {
+    	return dataSet.map(new Function<A, B>() {
+
+			@Override
+			public B call(A v1) throws Exception {
+				// TODO Auto-generated method stub
+				return new B(
+						createKey(v1));
+			}
+    		
+    	});
+    }
 
 }
