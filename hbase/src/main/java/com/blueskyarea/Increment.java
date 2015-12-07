@@ -40,34 +40,28 @@ public class Increment {
 		targetKeys.add("key5");
 		targetKeys.add("saveKeysaveData1");
 		targetKeys.add("saveKeysaveData2");
-		
+
 		// Filter
 		FilterList filter = new FilterList(FilterList.Operator.MUST_PASS_ONE);
-		for (String key : targetKeys){
-			filter.addFilter(new RowFilter(CompareOp.EQUAL, new BinaryComparator(Bytes.toBytes(key))));
+		for (String key : targetKeys) {
+			filter.addFilter(new RowFilter(CompareOp.EQUAL,
+					new BinaryComparator(Bytes.toBytes(key))));
 		}
-		
+
 		//BinaryComparator comparator =
 		//		new BinaryComparator(Bytes.toBytes("saveKeysaveData1"));
 		//	Filter filter = new RowFilter(CompareOp.EQUAL, comparator);
-		
+
 		// configure HBase
 		Configuration conf = HBaseConfiguration.create();
-		/*Job job;
-		try {
-			job = Job.getInstance(conf);
-			TableMapReduceUtil.initTableMapperJob(
-					"ns:test",
-					new Scan().setFilter(filter),
-					TableMapper.class,
-					null,
-					null,
-					job);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}*/
-		
+		/*
+		 * Job job; try { job = Job.getInstance(conf);
+		 * TableMapReduceUtil.initTableMapperJob( "ns:test", new
+		 * Scan().setFilter(filter), TableMapper.class, null, null, job); }
+		 * catch (IOException e) { // TODO Auto-generated catch block
+		 * e.printStackTrace(); }
+		 */
+
 		conf.set(TableInputFormat.INPUT_TABLE, "ns:test");
 		String stringScan;
 		try {
@@ -79,54 +73,63 @@ public class Increment {
 			e.printStackTrace();
 		}
 
-
 		// Initializing the spark context
 		SparkConf sparkConf = new SparkConf().setAppName("LoadData").setMaster("local");
 		JavaSparkContext jsc = new JavaSparkContext(sparkConf);
-		
+
 		// Load an RDD of (ImmutableBytesWritable, Result) tuples from the table
 		JavaPairRDD<ImmutableBytesWritable, Result> hbaseRDD = jsc.newAPIHadoopRDD(conf,
 				TableInputFormat.class, ImmutableBytesWritable.class, Result.class);
-		
+
 		// Count data size
 		System.out.println("data size:" + hbaseRDD.count());
-		
+
+		JavaRDD<String> my01 = hbaseRDD
+				.map(new Function<Tuple2<ImmutableBytesWritable, Result>, String>() {
+
+					public String call(Tuple2<ImmutableBytesWritable, Result> v1) throws Exception {
+						byte[] o = v1._2().getValue(Bytes.toBytes("data"), Bytes.toBytes("q1"));
+						return Bytes.toString(o);
+						//return null;
+					}
+
+				});
+
+		System.out.println(my01.collect());
+
 		// Get data from hbase
-		
+
 		// Adding
 
 		// Save data to hbase
 	}
-	
-	/*private static String convertScanToString(Scan scan) {
-		try {
-			return Base64.encodeBytes(ProtobufUtil.toScan(scan).toByteArray());
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return null;
-		}
-	}*/
-	
-//	static String convertScanToString(Scan scan) throws IOException {
-//        ByteArrayOutputStream out = new ByteArrayOutputStream();
-//        DataOutput dos = new DataOutputStream(out);
-//        scan.write(dos);
-//        return Base64.encodeBytes(out.toByteArray());
-//    }
-	
+
+	/*
+	 * private static String convertScanToString(Scan scan) { try { return
+	 * Base64.encodeBytes(ProtobufUtil.toScan(scan).toByteArray()); } catch
+	 * (IOException e) { // TODO Auto-generated catch block e.printStackTrace();
+	 * return null; } }
+	 */
+
+	//	static String convertScanToString(Scan scan) throws IOException {
+	//        ByteArrayOutputStream out = new ByteArrayOutputStream();
+	//        DataOutput dos = new DataOutputStream(out);
+	//        scan.write(dos);
+	//        return Base64.encodeBytes(out.toByteArray());
+	//    }
+
 	static String convertScanToString(Scan scan) throws IOException {
 		ClientProtos.Scan proto = ProtobufUtil.toScan(scan);
 		return Base64.encodeBytes(proto.toByteArray());
 	}
 
 	protected JavaPairRDD<String, B> groupByKey2(JavaSparkContext jsc, List<A> list) {
-        JavaRDD<A> dataSet = jsc.parallelize(list);
-        JavaRDD<B> dataSet2 = convertEntity(dataSet);
-        
-        // TODO: Join with original data.
-        
-        JavaPairRDD<String, B> pairRdd2 = dataSet2.mapToPair(new PairFunction<B, String, B>() {
+		JavaRDD<A> dataSet = jsc.parallelize(list);
+		JavaRDD<B> dataSet2 = convertEntity(dataSet);
+
+		// TODO: Join with original data.
+
+		JavaPairRDD<String, B> pairRdd2 = dataSet2.mapToPair(new PairFunction<B, String, B>() {
 			private static final long serialVersionUID = 1L;
 
 			@Override
@@ -134,31 +137,29 @@ public class Increment {
 				// TODO Auto-generated method stub
 				return new Tuple2(data.getPid(), data);
 			}
-        	
-        }).reduceByKey(new Function2<B, B, B>() {
+
+		}).reduceByKey(new Function2<B, B, B>() {
 
 			@Override
 			public B call(B v1, B v2) throws Exception {
 				// TODO Auto-generated method stub
-				return new B(
-						v1.getPid());
+				return new B(v1.getPid());
 			}
-        });
+		});
 
-    	return pairRdd2;
-    }
-    
-    private JavaRDD<B> convertEntity(JavaRDD<A> dataSet) {
-    	return dataSet.map(new Function<A, B>() {
+		return pairRdd2;
+	}
+
+	private JavaRDD<B> convertEntity(JavaRDD<A> dataSet) {
+		return dataSet.map(new Function<A, B>() {
 
 			@Override
 			public B call(A v1) throws Exception {
 				// TODO Auto-generated method stub
-				return new B(
-						createKey(v1));
+				return new B(createKey(v1));
 			}
-    		
-    	});
-    }
+
+		});
+	}
 
 }

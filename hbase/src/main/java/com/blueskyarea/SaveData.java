@@ -30,15 +30,15 @@ public class SaveData {
 		// Initializing the spark context
 		SparkConf sparkConf = new SparkConf().setAppName("SaveData").setMaster("local");
 		JavaSparkContext jsc = new JavaSparkContext(sparkConf);
-		
+
 		// Define input data		
 		List<String> data = new ArrayList();
 		data.add("saveData1");
 		data.add("saveData2");
 		JavaRDD<String> dataRdd = jsc.parallelize(data);
-		
+
 		// new Hadoop API configuration
-		try {			
+		try {
 			Job job = Job.getInstance(conf);
 			job.setOutputFormatClass(org.apache.hadoop.hbase.mapreduce.TableOutputFormat.class);
 			saveToHBase(dataRdd, job.getConfiguration());
@@ -46,21 +46,21 @@ public class SaveData {
 			e.printStackTrace();
 		}
 	}
-	
+
 	private static void saveToHBase(JavaRDD<String> dataRdd, Configuration conf2) {
 		// create Key, Value pair to store in HBase
-		JavaPairRDD<ImmutableBytesWritable, Put> hbasePuts = dataRdd.mapToPair(new PairFunction<String, ImmutableBytesWritable, Put>() {
+		JavaPairRDD<ImmutableBytesWritable, Put> hbasePuts = dataRdd
+				.mapToPair(new PairFunction<String, ImmutableBytesWritable, Put>() {
 					public Tuple2<ImmutableBytesWritable, Put> call(String row) throws Exception {
 						String rowKey = "saveKey" + row;
 						Put put = new Put(Bytes.toBytes(rowKey));
-						put.add(Bytes.toBytes("data"), Bytes.toBytes("q1"),
-								Bytes.toBytes(row));
+						put.add(Bytes.toBytes("data"), Bytes.toBytes("q1"), Bytes.toBytes(row));
 
 						return new Tuple2<ImmutableBytesWritable, Put>(
 								new ImmutableBytesWritable(), put);
 					}
 				});
-		
+
 		hbasePuts.saveAsNewAPIHadoopDataset(conf2);
 	}
 

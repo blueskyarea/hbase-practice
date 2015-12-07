@@ -6,7 +6,7 @@ import java.util.List;
 
 import com.couchbase.client.CouchbaseClient;
 
-public class SaveDataToCouchbase {	
+public class SaveDataToCouchbase {
 	public static void main(String[] args) {
 		CouchbaseClient client = null;
 
